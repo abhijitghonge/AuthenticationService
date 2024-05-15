@@ -1,11 +1,16 @@
 package org.ag.authenticationservice.controllers;
 
 import org.ag.authenticationservice.dtos.*;
+import org.ag.authenticationservice.exceptions.PasswordMismatchException;
 import org.ag.authenticationservice.exceptions.UserAlreadyPresentException;
+import org.ag.authenticationservice.exceptions.UserNotFoundException;
 import org.ag.authenticationservice.models.User;
 import org.ag.authenticationservice.services.AuthService;
+import org.antlr.v4.runtime.misc.Pair;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,8 +45,15 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<SignUpResponseDto> login(@RequestBody LoginRequestDto loginRequestDto) {
-        return null;
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequestDto) throws UserNotFoundException, PasswordMismatchException {
+        Pair<User, MultiValueMap<String, String>> loginInfo = authService.login(loginRequestDto.getEmail(), loginRequestDto.getPassword());
+
+        LoginResponseDto loginResponseDto  = LoginResponseDto.builder()
+                .email(loginInfo.a.getEmail())
+                .status(ResponseStatus.SUCCESS)
+                .build();
+
+        return new ResponseEntity<>(loginResponseDto, loginInfo.b, HttpStatus.OK);
     }
 
     @PostMapping("/signout")

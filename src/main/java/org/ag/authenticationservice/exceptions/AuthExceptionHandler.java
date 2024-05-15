@@ -11,8 +11,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class AuthExceptionHandler {
 
-    @ExceptionHandler( { UserAlreadyPresentException.class })
-    public ResponseEntity<ErrorResponse> handleUserAlreadyPresentException(final UserAlreadyPresentException e) {
+    @ExceptionHandler( { UserAlreadyPresentException.class , UserNotFoundException.class, PasswordMismatchException.class})
+    public ResponseEntity<ErrorResponse> handleCheckedException(final Exception e) {
+        ErrorResponse error = ErrorResponse.builder()
+                .responseStatus(ResponseStatus.FAILURE)
+                .message(e.getMessage())
+                .build();
+
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler( { RuntimeException.class})
+    public ResponseEntity<ErrorResponse> handleException(final RuntimeException e) {
         ErrorResponse error = ErrorResponse.builder()
                 .responseStatus(ResponseStatus.FAILURE)
                 .message(e.getMessage())
