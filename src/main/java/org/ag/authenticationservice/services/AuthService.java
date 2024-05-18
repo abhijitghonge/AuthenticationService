@@ -1,13 +1,19 @@
 package org.ag.authenticationservice.services;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.MacAlgorithm;
+import org.ag.authenticationservice.enums.SessionState;
 import org.ag.authenticationservice.exceptions.PasswordMismatchException;
 import org.ag.authenticationservice.exceptions.UserAlreadyPresentException;
 import org.ag.authenticationservice.exceptions.UserNotFoundException;
+import org.ag.authenticationservice.models.Session;
 import org.ag.authenticationservice.models.User;
+import org.ag.authenticationservice.repositories.SessionRepository;
 import org.ag.authenticationservice.repositories.UserRepository;
 import org.antlr.v4.runtime.misc.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,11 +35,17 @@ public class AuthService {
 
     private final UserRepository userRepository;
 
+    private final SessionRepository sessionRepository;
+
     private BCryptPasswordEncoder bCrypt;
 
-    public AuthService(UserRepository userRepository, BCryptPasswordEncoder bCrypt) {
+    @Autowired
+    private SecretKey secretKey;
+
+    public AuthService(UserRepository userRepository, SessionRepository sessionRepository, BCryptPasswordEncoder bCrypt) {
         this.userRepository = userRepository;
         this.bCrypt = bCrypt;
+        this.sessionRepository = sessionRepository;
     }
 
     public User signUp(String email, String password) throws UserAlreadyPresentException {
@@ -77,15 +89,53 @@ public class AuthService {
             claims.put("expirationDate", Date.from(expiryDate));
             claims.put("iat", Date.from(Instant.now()));
 
-            MacAlgorithm algorithm = Jwts.SIG.HS256;
-            SecretKey secretKey = algorithm.key().build();
-
             String token = Jwts.builder().claims(claims).signWith(secretKey).compact();
+
+            //Storing Session for validation purpose
+            Session session = new Session();
+            session.setUser(user);
+            session.setSessionState(SessionState.ACTIVE);
+            session.setToken(token);
+            sessionRepository.save(session);
+
             MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
             headers.add(HttpHeaders.SET_COOKIE, token);
             return new Pair<>(user, headers);
         }else {
             throw new PasswordMismatchException("Password is incorrect! Please retry");
         }
+    }
+
+
+    public Boolean validateToken(String token, Long userId) {
+        Optional<Session> byTokenAndUser = sessionRepository.findByTokenAndUser_id(token, userId);
+
+        if(byTokenAndUser.isEmpty()){
+            return false;
+        }
+
+        JwtParser jwtParser = Jwts.parser().verifyWith(secretKey).build();
+        Claims claims = jwtParser.parseSignedClaims(token).getPayload();
+
+        Long expiry = (Long)claims.get("expirationDate");
+        Long nowInMillis = Instant.now().toEpochMilli();
+
+        if(nowInMillis> expiry){
+            System.out.println(expiry);
+            System.out.println(nowInMillis);
+            System.out.println("Token expired");
+            return false;
+        }
+
+        String email = userRepository.findById(userId).get().getEmail();
+        if(!email.equals(claims.get("email"))){
+            System.out.println(email);
+            System.out.println(claims.get("email"));
+            System.out.println("Emails don't match");
+            return false;
+        }
+
+        return true;
+
     }
 }

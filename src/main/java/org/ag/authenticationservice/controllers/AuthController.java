@@ -56,6 +56,11 @@ public class AuthController {
         return new ResponseEntity<>(loginResponseDto, loginInfo.b, HttpStatus.OK);
     }
 
+    @PostMapping("/validate")
+    public ResponseEntity<Boolean> validate(@RequestBody ValidateTokenRequestDto validateTokenRequestDto)  {
+        return ResponseEntity.ok(authService.validateToken(validateTokenRequestDto.getToken(), validateTokenRequestDto.getUserId()));
+    }
+
     @PostMapping("/signout")
     public ResponseEntity<SignUpResponseDto> signOut(@RequestBody LogoutRequestDto logoutRequestDto) {
         return null;
