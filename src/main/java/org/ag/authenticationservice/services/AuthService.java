@@ -3,7 +3,6 @@ package org.ag.authenticationservice.services;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.MacAlgorithm;
 import org.ag.authenticationservice.enums.SessionState;
 import org.ag.authenticationservice.exceptions.PasswordMismatchException;
 import org.ag.authenticationservice.exceptions.UserAlreadyPresentException;
@@ -21,7 +20,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -67,18 +65,6 @@ public class AuthService {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException("User Not Found"+email));
 
         if(bCrypt.matches(password, user.getPassword())) {
-            String message = """
-                    {
-                       "email": "anurag@scaler.com",
-                       "roles": [
-                          "instructor",
-                          "buddy"
-                       ],
-                       "expirationDate": "2ndJuly2024"
-                    }""";
-            byte[] contents = message.getBytes(StandardCharsets.UTF_8);
-
-
             Map<String, Object> claims = new HashMap<>();
             claims.put("email", email);
             claims.put("roles", user.getRoles());

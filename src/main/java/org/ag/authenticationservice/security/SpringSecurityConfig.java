@@ -73,7 +73,11 @@ public class SpringSecurityConfig {
             throws Exception {
         http
                 .authorizeHttpRequests((authorize) -> authorize
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/users/**").permitAll()
+                        //.requestMatchers("/auth/**").permitAll()
                         .anyRequest().authenticated()
+
                 )
                 // Form login handles the redirect to the login page from the
                 // authorization server filter chain
