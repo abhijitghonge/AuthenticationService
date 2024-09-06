@@ -34,8 +34,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.UUID;
 
-@Configuration
-@EnableWebSecurity
+//@Configuration
 public class SpringSecurityConfig {
 
     private BCryptPasswordEncoder bCryptPasswordEncoder;
